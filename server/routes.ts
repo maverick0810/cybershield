@@ -30,10 +30,44 @@ const upload = multer({
 
 // Generate a response with LLM-like behavior (simplified simulation)
 function generateLLMResponse(sanitizedText: string): string {
-  // This is a simple mock to demonstrate response structure
+  // This is a simplified mock to demonstrate response structure
   // In production, this would connect to a real LLM API
   
-  const questions = [
+  // Check if it's about writing an email
+  if (sanitizedText.toLowerCase().includes("write a mail") || 
+      sanitizedText.toLowerCase().includes("write an email") ||
+      sanitizedText.toLowerCase().includes("draft an email") ||
+      sanitizedText.toLowerCase().includes("compose an email")) {
+    
+    // Email writing request with redacted PII
+    if (sanitizedText.includes("[REDACTED]")) {
+      return `Here's a draft email as requested, using only the non-sensitive information provided:
+
+Subject: Hackathon at Graphic Era University
+
+Dear [Recipient],
+
+I'm writing regarding the hackathon event at Graphic Era University. I would like to inquire about the following details:
+
+1. When is the hackathon scheduled to take place?
+2. What are the eligibility requirements for participants?
+3. Are there any specific themes or technologies that will be featured?
+4. How can interested students register for this event?
+
+I look forward to your response and potentially participating in this exciting opportunity.
+
+Best regards,
+[Your Name]
+
+Note: I've created a professional email template based on the information provided while maintaining privacy by not including any specific personal identifiers.`;
+    }
+    
+    // General email writing
+    return "I'd be happy to help you draft an email. Could you provide more context about what you'd like to include in the message?";
+  }
+  
+  // Questions about personal info
+  const personalInfoQuestions = [
     "What is your name?",
     "How can I contact you?",
     "Tell me about yourself",
@@ -41,8 +75,7 @@ function generateLLMResponse(sanitizedText: string): string {
     "What's your address?"
   ];
   
-  // Check if the input is a question about personal info
-  const isPersonalInfoRequest = questions.some(q => 
+  const isPersonalInfoRequest = personalInfoQuestions.some(q => 
     sanitizedText.toLowerCase().includes(q.toLowerCase())
   );
   
@@ -50,13 +83,23 @@ function generateLLMResponse(sanitizedText: string): string {
     return "I noticed you're asking for personal information. I prefer not to share such details for privacy reasons. Is there anything else I can help you with?";
   }
   
-  // Simple responses based on potential content
+  // Medical or mental health content
+  if (sanitizedText.toLowerCase().includes("depressed") || 
+      sanitizedText.toLowerCase().includes("anxiety") ||
+      sanitizedText.toLowerCase().includes("medication") ||
+      sanitizedText.toLowerCase().includes("therapy") ||
+      sanitizedText.toLowerCase().includes("mental health")) {
+    
+    return "I notice you're discussing topics related to mental health. While I'm not a medical professional, I can provide general information about mental wellbeing resources. Many communities have helplines and counseling services available if you're looking for support. Would you like me to share some general resources on this topic?";
+  }
+  
+  // Generic response for redacted content
   if (sanitizedText.includes("[REDACTED]")) {
-    return "I see there's some sensitive information that has been redacted for your protection. I've processed your safe, redacted message. How can I assist you further?";
+    return "I've processed your message after removing sensitive information for privacy protection. I can respond based on the non-sensitive portions of your request. Would you like me to focus on a particular aspect of your question?";
   }
   
   // Default response
-  return "I've processed your message safely. Thank you for using our secure AI system. Is there anything else you'd like to discuss?";
+  return "I've processed your message safely. How can I assist you further with this request?";
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {

@@ -38,6 +38,7 @@ type MessageType = {
       icon: React.ComponentType<{ className?: string }>;
     }>;
     json?: string;
+    piiSanitizedText?: string; // Sanitized text with redacted sensitive info
   };
 };
 
@@ -124,7 +125,8 @@ export function ChatInterface({
         
         systemResponse.piiDetected = {
           types: frontendResults.types,
-          json: jsonDisplay
+          json: jsonDisplay,
+          piiSanitizedText: data.sanitizedText
         };
       }
       
@@ -205,7 +207,8 @@ export function ChatInterface({
         
         systemResponse.piiDetected = {
           types: frontendResults.types,
-          json: jsonDisplay
+          json: jsonDisplay,
+          piiSanitizedText: data.sanitizedText
         };
       }
       
@@ -281,7 +284,8 @@ export function ChatInterface({
         
         systemResponse.piiDetected = {
           types: frontendResults.types,
-          json: jsonDisplay
+          json: jsonDisplay,
+          piiSanitizedText: data.sanitizedText
         };
       }
       
@@ -425,7 +429,26 @@ export function ChatInterface({
                           </span>
                         </div>
                       )}
-                      <p className="text-gray-300">{message.content}</p>
+                      
+                      {message.piiDetected && (
+                        <div className="border-b border-gray-700 pb-3 mb-3">
+                          <div className="flex items-center">
+                            <Shield className="text-[#00FFCA] mr-2 h-4 w-4" />
+                            <p className="text-gray-400 text-xs">AI received redacted version:</p>
+                          </div>
+                          <p className="mt-1 text-gray-400 text-sm italic">
+                            {message.piiDetected.piiSanitizedText || "Content with redacted sensitive information"}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <div className="flex items-center mb-1">
+                          <Bot className="text-[#31E1F7] mr-2 h-4 w-4" />
+                          <p className="text-[#31E1F7] text-xs">AI Assistant Response:</p>
+                        </div>
+                        <p className="text-gray-200 whitespace-pre-line">{message.content}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
