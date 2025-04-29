@@ -22,6 +22,14 @@ const examples = [
   { 
     text: "My date of birth is January 15, 1985 and my account number is A12345678.",
     description: "Include DOB and account number"
+  },
+  {
+    text: "I've been feeling depressed lately and my therapist suggested I try new anxiety medication.",
+    description: "Include mental health information"
+  },
+  {
+    text: "My fingerprint scan was required to access my genetic test results showing my predisposition to certain conditions.",
+    description: "Include biometric and genetic data"
   }
 ];
 
@@ -75,38 +83,90 @@ export function DemoControls({
         
         <div className="border-t border-gray-800 pt-4">
           <h4 className="font-medium text-[#31E1F7] mb-2">PII Types Detected:</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="flex items-center">
-              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-              <span className="text-gray-300">Names</span>
+          <div className="space-y-3">
+            {/* Standard PII */}
+            <div>
+              <h5 className="text-xs text-[#7B4DFF] mb-1">Standard PII:</h5>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Names</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Emails</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Phone Numbers</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Addresses</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">SSNs</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Credit Cards</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">DOB</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Account #s</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center">
-              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-              <span className="text-gray-300">Emails</span>
+            
+            {/* Sensitive Information */}
+            <div>
+              <h5 className="text-xs text-[#7B4DFF] mb-1">Sensitive Information:</h5>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Mental Health</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Medical Info</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Personal Crisis</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Sensitive Info</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center">
-              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-              <span className="text-gray-300">Phone Numbers</span>
-            </div>
-            <div className="flex items-center">
-              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-              <span className="text-gray-300">Addresses</span>
-            </div>
-            <div className="flex items-center">
-              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-              <span className="text-gray-300">SSNs</span>
-            </div>
-            <div className="flex items-center">
-              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-              <span className="text-gray-300">Credit Cards</span>
-            </div>
-            <div className="flex items-center">
-              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-              <span className="text-gray-300">DOB</span>
-            </div>
-            <div className="flex items-center">
-              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-              <span className="text-gray-300">Account #s</span>
+            
+            {/* Advanced Data Types */}
+            <div>
+              <h5 className="text-xs text-[#7B4DFF] mb-1">Advanced Data Types:</h5>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Biometric Data</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Genetic Info</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Behavioral Data</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+                  <span className="text-gray-300">Employee IDs</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

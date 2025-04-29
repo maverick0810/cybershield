@@ -92,39 +92,48 @@ export default function DemoPage() {
             >
               <h2 className="font-semibold text-2xl mb-4">How This Demo Works</h2>
               <p className="text-gray-300 mb-4">
-                This interactive demonstration shows how our system protects your personal information when using AI:
+                This interactive demonstration shows how our system protects personal information when using AI systems:
               </p>
               
               <ol className="space-y-3 text-gray-300">
                 <li className="flex items-baseline">
                   <span className="text-[#00FFCA] mr-2">1.</span>
-                  <span>Enter a message containing personal information (or use one of our examples)</span>
+                  <span>Enter a message containing personal information or try processing an image, audio file, or webpage</span>
                 </li>
                 <li className="flex items-baseline">
                   <span className="text-[#00FFCA] mr-2">2.</span>
-                  <span>Our system automatically detects various types of PII including names, emails, phone numbers, etc.</span>
+                  <span>Our system uses advanced pattern matching to detect various types of PII, from standard identifiers to sensitive medical and biometric data</span>
                 </li>
                 <li className="flex items-baseline">
                   <span className="text-[#00FFCA] mr-2">3.</span>
-                  <span>The detected PII is extracted and securely stored in a JSON format</span>
+                  <span>The detected PII is extracted and securely stored in your preferred format (JSON, encrypted database, etc.)</span>
                 </li>
                 <li className="flex items-baseline">
                   <span className="text-[#00FFCA] mr-2">4.</span>
-                  <span>Only the sanitized version of your message is processed by the AI</span>
+                  <span>Only the sanitized version of your message is processed by the AI, ensuring privacy and compliance</span>
                 </li>
                 <li className="flex items-baseline">
                   <span className="text-[#00FFCA] mr-2">5.</span>
-                  <span>Adjust the detection level and other settings to see how our system can be customized</span>
+                  <span>Adjust the detection level to balance between privacy (high sensitivity) and utility (lower sensitivity)</span>
                 </li>
               </ol>
               
               <div className="mt-6 p-4 bg-[#121212] rounded-lg border border-gray-700">
-                <p className="text-amber-400 font-medium mb-2">Note:</p>
-                <p className="text-gray-400 text-sm">
-                  This is a demonstration of our front-end capabilities. In a production environment, 
-                  this system connects to our secure back-end for additional processing and 
-                  integrates with your AI models via API.
-                </p>
+                <p className="text-amber-400 font-medium mb-2">Advanced Features:</p>
+                <ul className="space-y-2 text-gray-400 text-sm">
+                  <li className="flex items-start">
+                    <span className="text-[#00FFCA] mr-2">•</span>
+                    <span><span className="font-medium text-white">Multi-modal redaction:</span> Process text, images (OCR), audio (transcription), and webpages</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-[#00FFCA] mr-2">•</span>
+                    <span><span className="font-medium text-white">Sensitive information detection:</span> Beyond basic PII to include mental health, medical, and crisis data</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-[#00FFCA] mr-2">•</span>
+                    <span><span className="font-medium text-white">Advanced data protection:</span> Biometric, genetic, and behavioral data redaction</span>
+                  </li>
+                </ul>
               </div>
             </motion.div>
           </div>
