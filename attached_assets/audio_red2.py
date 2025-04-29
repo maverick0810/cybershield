@@ -61,4 +61,5 @@ if __name__ == "__main__":
     pipeline = RedactionPipeline()
     output = pipeline.run_pipeline(transcript_text)
 
-    print(json.dumps(output, indent=2))
+    # print(json.dumps(output, indent=2))
+    print(output["llm_output"])

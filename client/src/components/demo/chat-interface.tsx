@@ -77,7 +77,7 @@ export function ChatInterface({
     }
   }, [messages]);
 
-  // Process text input through backend API
+  // Process text input through Python backend API
   const processTextMessage = async (text: string) => {
     try {
       setIsLoading(true);
@@ -92,46 +92,98 @@ export function ChatInterface({
       
       setMessages(prev => [...prev, userMessage]);
       
-      // Process the text message on the server
-      const response = await apiRequest("POST", "/api/process-message", {
-        text,
-        detectionLevel,
-        contentType: "text"
-      });
-      
-      const data = await response.json();
-      
-      // Prepare the system response
-      let systemResponse: MessageType = {
-        id: `system-${Date.now()}`,
-        type: "system",
-        content: data.llmResponse || "I've processed your message.",
-        contentType: "text"
-      };
-      
-      // Generate JSON if PII is detected
-      if (data.piiDetected) {
-        // Get frontend-side PII detection for UI components
-        const frontendResults = generatePIIReport(text, detectionLevel);
+      // Process the text message using your local Python server
+      try {
+        const response = await fetch("http://127.0.0.1:5001/api/process-python", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text,
+            detectionLevel,
+            contentType: "text"
+          }),
+        });
         
-        // Format PII data for display
-        const jsonData = {
-          session_id: `session-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          pii_items: data.piiItems || []
+        const data = await response.json();
+        
+        // Prepare the system response
+        let systemResponse: MessageType = {
+          id: `system-${Date.now()}`,
+          type: "system",
+          content: data.llmResponse || "I've processed your message.",
+          contentType: "text"
         };
         
-        const jsonDisplay = JSON.stringify(jsonData, null, 2);
+        // Generate JSON if PII is detected
+        if (data.piiDetected) {
+          // Get frontend-side PII detection for UI components
+          const frontendResults = generatePIIReport(text, detectionLevel);
+          
+          // Format PII data for display
+          const jsonData = {
+            session_id: `session-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            pii_items: data.piiItems || []
+          };
+          
+          const jsonDisplay = JSON.stringify(jsonData, null, 2);
+          
+          systemResponse.piiDetected = {
+            types: frontendResults.types,
+            json: jsonDisplay,
+            piiSanitizedText: data.sanitizedText
+          };
+        }
         
-        systemResponse.piiDetected = {
-          types: frontendResults.types,
-          json: jsonDisplay,
-          piiSanitizedText: data.sanitizedText
+        setMessages(prev => [...prev, systemResponse]);
+        setInputValue("");
+      } catch (pythonError) {
+        console.error("Python backend error:", pythonError);
+        
+        // Fallback to regular backend if Python isn't available
+        console.log("Falling back to standard backend processing");
+        const response = await apiRequest("POST", "/api/process-message", {
+          text,
+          detectionLevel,
+          contentType: "text"
+        });
+        
+        const data = await response.json();
+        
+        // Prepare the system response
+        let systemResponse: MessageType = {
+          id: `system-${Date.now()}`,
+          type: "system",
+          content: data.llmResponse || "I've processed your message.",
+          contentType: "text"
         };
+        
+        // Generate JSON if PII is detected
+        if (data.piiDetected) {
+          // Get frontend-side PII detection for UI components
+          const frontendResults = generatePIIReport(text, detectionLevel);
+          
+          // Format PII data for display
+          const jsonData = {
+            session_id: `session-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            pii_items: data.piiItems || []
+          };
+          
+          const jsonDisplay = JSON.stringify(jsonData, null, 2);
+          
+          systemResponse.piiDetected = {
+            types: frontendResults.types,
+            json: jsonDisplay,
+            piiSanitizedText: data.sanitizedText
+          };
+        }
+        
+        setMessages(prev => [...prev, systemResponse]);
+        setInputValue("");
       }
-      
-      setMessages(prev => [...prev, systemResponse]);
-      setInputValue("");
       
     } catch (error) {
       console.error("Error processing message:", error);
@@ -160,6 +212,8 @@ export function ChatInterface({
       // Create file upload form data
       const formData = new FormData();
       formData.append("file", selectedFile);
+      formData.append("contentType", contentType);
+      formData.append("detectionLevel", detectionLevel);
       
       // Add user message showing file upload
       const userMessage: MessageType = {
@@ -172,48 +226,96 @@ export function ChatInterface({
       
       setMessages(prev => [...prev, userMessage]);
       
-      // Upload file to server
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData
-      });
-      
-      const data = await response.json();
-      
-      // Prepare system response
-      let systemResponse: MessageType = {
-        id: `system-${Date.now()}`,
-        type: "system",
-        content: data.llmResponse || `I've processed your ${contentType} file.`,
-        contentType: contentType,
-        fileName: selectedFile.name
-      };
-      
-      // Handle PII detection results
-      if (data.piiDetected) {
-        // For frontend display, use the extracted text to generate visual elements
-        const frontendResults = generatePIIReport(data.originalText || "", "High (Sensitive)");
+      try {
+        // Try the Python backend first
+        const response = await fetch("http://127.0.0.1:5001/api/process-python", {
+          method: "POST",
+          body: formData,
+        });
         
-        // Format PII data for display
-        const jsonData = {
-          session_id: `session-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          content_type: contentType,
-          file_name: selectedFile.name,
-          pii_items: data.piiItems || []
+        const data = await response.json();
+        
+        // Prepare system response
+        let systemResponse: MessageType = {
+          id: `system-${Date.now()}`,
+          type: "system",
+          content: data.llmResponse || `I've processed your ${contentType} file.`,
+          contentType: contentType,
+          fileName: selectedFile.name
         };
         
-        const jsonDisplay = JSON.stringify(jsonData, null, 2);
+        // Handle PII detection results
+        if (data.piiDetected) {
+          // For frontend display, use the extracted text to generate visual elements
+          const frontendResults = generatePIIReport(data.originalText || "", "High (Sensitive)");
+          
+          // Format PII data for display
+          const jsonData = {
+            session_id: `session-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            content_type: contentType,
+            file_name: selectedFile.name,
+            pii_items: data.piiItems || []
+          };
+          
+          const jsonDisplay = JSON.stringify(jsonData, null, 2);
+          
+          systemResponse.piiDetected = {
+            types: frontendResults.types,
+            json: jsonDisplay,
+            piiSanitizedText: data.sanitizedText
+          };
+        }
         
-        systemResponse.piiDetected = {
-          types: frontendResults.types,
-          json: jsonDisplay,
-          piiSanitizedText: data.sanitizedText
+        setMessages(prev => [...prev, systemResponse]);
+        setSelectedFile(null);
+      } catch (pythonError) {
+        console.error("Python backend error:", pythonError);
+        
+        // Fall back to the standard backend
+        console.log("Falling back to standard backend processing");
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        // Prepare system response
+        let systemResponse: MessageType = {
+          id: `system-${Date.now()}`,
+          type: "system",
+          content: data.llmResponse || `I've processed your ${contentType} file.`,
+          contentType: contentType,
+          fileName: selectedFile.name
         };
+        
+        // Handle PII detection results
+        if (data.piiDetected) {
+          // For frontend display, use the extracted text to generate visual elements
+          const frontendResults = generatePIIReport(data.originalText || "", "High (Sensitive)");
+          
+          // Format PII data for display
+          const jsonData = {
+            session_id: `session-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            content_type: contentType,
+            file_name: selectedFile.name,
+            pii_items: data.piiItems || []
+          };
+          
+          const jsonDisplay = JSON.stringify(jsonData, null, 2);
+          
+          systemResponse.piiDetected = {
+            types: frontendResults.types,
+            json: jsonDisplay,
+            piiSanitizedText: data.sanitizedText
+          };
+        }
+        
+        setMessages(prev => [...prev, systemResponse]);
+        setSelectedFile(null);
       }
-      
-      setMessages(prev => [...prev, systemResponse]);
-      setSelectedFile(null);
       
     } catch (error) {
       console.error(`Error processing ${contentType} file:`, error);
@@ -250,47 +352,103 @@ export function ChatInterface({
       
       setMessages(prev => [...prev, userMessage]);
       
-      // Process webpage content on the server
-      const response = await apiRequest("POST", "/api/process-webpage", {
-        url: webpageUrl
-      });
-      
-      const data = await response.json();
-      
-      // Prepare system response
-      let systemResponse: MessageType = {
-        id: `system-${Date.now()}`,
-        type: "system",
-        content: data.llmResponse || "I've processed the webpage content.",
-        contentType: "webpage",
-        url: webpageUrl
-      };
-      
-      // Handle PII detection results
-      if (data.piiDetected) {
-        // For frontend display, use sanitized text to generate visual elements
-        const frontendResults = generatePIIReport(data.sanitizedText || "", detectionLevel);
+      try {
+        // Try the Python backend first
+        const response = await fetch("http://127.0.0.1:5001/api/process-python", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url: webpageUrl,
+            detectionLevel,
+            contentType: "webpage"
+          }),
+        });
         
-        // Format PII data for display
-        const jsonData = {
-          session_id: `session-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          content_type: "webpage",
-          url: webpageUrl,
-          pii_items: data.piiItems || []
+        const data = await response.json();
+        
+        // Prepare system response
+        let systemResponse: MessageType = {
+          id: `system-${Date.now()}`,
+          type: "system",
+          content: data.llmResponse || "I've processed the webpage content.",
+          contentType: "webpage",
+          url: webpageUrl
         };
         
-        const jsonDisplay = JSON.stringify(jsonData, null, 2);
+        // Handle PII detection results
+        if (data.piiDetected) {
+          // For frontend display, use sanitized text to generate visual elements
+          const frontendResults = generatePIIReport(data.originalText || "", detectionLevel);
+          
+          // Format PII data for display
+          const jsonData = {
+            session_id: `session-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            content_type: "webpage",
+            url: webpageUrl,
+            pii_items: data.piiItems || []
+          };
+          
+          const jsonDisplay = JSON.stringify(jsonData, null, 2);
+          
+          systemResponse.piiDetected = {
+            types: frontendResults.types,
+            json: jsonDisplay,
+            piiSanitizedText: data.sanitizedText
+          };
+        }
         
-        systemResponse.piiDetected = {
-          types: frontendResults.types,
-          json: jsonDisplay,
-          piiSanitizedText: data.sanitizedText
+        setMessages(prev => [...prev, systemResponse]);
+        setWebpageUrl("");
+      } catch (pythonError) {
+        console.error("Python backend error:", pythonError);
+        
+        // Fall back to the standard backend
+        console.log("Falling back to standard backend processing");
+        // Process webpage content on the server
+        const response = await apiRequest("POST", "/api/process-webpage", {
+          url: webpageUrl
+        });
+        
+        const data = await response.json();
+        
+        // Prepare system response
+        let systemResponse: MessageType = {
+          id: `system-${Date.now()}`,
+          type: "system",
+          content: data.llmResponse || "I've processed the webpage content.",
+          contentType: "webpage",
+          url: webpageUrl
         };
+        
+        // Handle PII detection results
+        if (data.piiDetected) {
+          // For frontend display, use sanitized text to generate visual elements
+          const frontendResults = generatePIIReport(data.sanitizedText || "", detectionLevel);
+          
+          // Format PII data for display
+          const jsonData = {
+            session_id: `session-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            content_type: "webpage",
+            url: webpageUrl,
+            pii_items: data.piiItems || []
+          };
+          
+          const jsonDisplay = JSON.stringify(jsonData, null, 2);
+          
+          systemResponse.piiDetected = {
+            types: frontendResults.types,
+            json: jsonDisplay,
+            piiSanitizedText: data.sanitizedText
+          };
+        }
+        
+        setMessages(prev => [...prev, systemResponse]);
+        setWebpageUrl("");
       }
-      
-      setMessages(prev => [...prev, systemResponse]);
-      setWebpageUrl("");
       
     } catch (error) {
       console.error("Error processing webpage:", error);

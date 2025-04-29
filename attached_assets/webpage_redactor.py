@@ -37,6 +37,7 @@ if __name__ == "__main__":
     pipeline = RedactionPipeline()
     output = pipeline.run_pipeline(output)
 
-    print(json.dumps(output, indent=2))
+    # print(json.dumps(output, indent=2))
     # # Pretty print result (optional)
     # print(json.dumps(output, indent=2))
+    print(output["llm_output"])
