@@ -3,6 +3,9 @@ import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
 
 interface DemoControlsProps {
   onDetectionLevelChange: (level: string) => void;
@@ -227,6 +230,32 @@ export function DemoControls({
                   <SelectItem value="Token Reference">Token Reference</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="border-t border-gray-800 pt-4 mt-4">
+              <div className="flex items-center mb-2">
+                <AlertCircle className="text-[#31E1F7] h-4 w-4 mr-2" />
+                <h5 className="text-xs text-[#7B4DFF]">Python Backend Connection</h5>
+              </div>
+              <div className="text-xs text-gray-400 mb-2">
+                To use your local Python redaction engine, run the API server on your machine and enter the public URL provided by ngrok/localtunnel:
+              </div>
+              <div className="flex space-x-2">
+                <Input
+                  type="text"
+                  placeholder="https://your-tunnel-url.ngrok.io"
+                  value={pythonUrl}
+                  onChange={handlePythonUrlChange}
+                  className="flex-grow bg-[#121212] border-gray-700 text-gray-300 text-sm"
+                />
+                <Button 
+                  onClick={() => onPythonUrlChange && onPythonUrlChange(pythonUrl)}
+                  variant="outline"
+                  className="border-[#00FFCA] text-[#00FFCA] hover:bg-[#00FFCA] hover:bg-opacity-10"
+                >
+                  Connect
+                </Button>
+              </div>
             </div>
           </div>
         </div>

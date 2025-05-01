@@ -10,6 +10,7 @@ export default function DemoPage() {
   const [detectionLevel, setDetectionLevel] = useState("Medium (Standard)");
   const [showProcessing, setShowProcessing] = useState(true);
   const [storageFormat, setStorageFormat] = useState("JSON");
+  const [pythonUrl, setPythonUrl] = useState("");
   
   // Set up event handlers for demo controls
   const handleDetectionLevelChange = (level: string) => {
@@ -22,6 +23,10 @@ export default function DemoPage() {
   
   const handleStorageFormatChange = (format: string) => {
     setStorageFormat(format);
+  };
+  
+  const handlePythonUrlChange = (url: string) => {
+    setPythonUrl(url);
   };
   
   // Set up example handlers to pass from DemoControls to ChatInterface
@@ -70,6 +75,7 @@ export default function DemoPage() {
                   detectionLevel={detectionLevel}
                   showProcessing={showProcessing}
                   storageFormat={storageFormat}
+                  pythonUrl={pythonUrl}
                 />
               </div>
               
@@ -79,6 +85,7 @@ export default function DemoPage() {
                   onDetectionLevelChange={handleDetectionLevelChange}
                   onShowProcessingChange={handleShowProcessingChange}
                   onStorageFormatChange={handleStorageFormatChange}
+                  onPythonUrlChange={handlePythonUrlChange}
                 />
               </div>
             </div>

@@ -46,12 +46,14 @@ interface ChatInterfaceProps {
   detectionLevel: string;
   showProcessing: boolean;
   storageFormat: string;
+  pythonUrl?: string;
 }
 
 export function ChatInterface({ 
   detectionLevel = "Medium (Standard)", 
   showProcessing = true,
-  storageFormat = "JSON"
+  storageFormat = "JSON",
+  pythonUrl = ""
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<MessageType[]>([
     {
