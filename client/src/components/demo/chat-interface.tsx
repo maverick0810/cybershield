@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Shield } from "lucide-react";
+import { Send, Bot, User, Shield, Image, Mic, Link as LinkIcon, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { detectPII } from "@/lib/pii-detector";
+import { toast } from "@/hooks/use-toast";
 
 import React from "react";
 
@@ -11,6 +12,12 @@ type MessageType = {
   id: string;
   type: "system" | "user";
   content: string;
+  attachment?: {
+    type: "image" | "audio" | "link";
+    url: string;
+    previewUrl?: string; // For local display
+    fileName?: string;
+  };
   piiDetected?: {
     types: Array<{
       type: string;
@@ -35,12 +42,16 @@ export function ChatInterface({
     {
       id: "welcome",
       type: "system",
-      content: "Welcome to CyberShield AI! I'm here to help you with your questions while protecting your sensitive information. Try sending a message that contains personal information to see how our system detects and secures it."
+      content: "Welcome to CyberShield AI! I'm here to help you with your questions while protecting your sensitive information. Try sending a message, image, audio, or link to see how our system processes it."
     }
   ]);
   
   const [inputValue, setInputValue] = useState("");
+  const [attachment, setAttachment] = useState<MessageType["attachment"] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -49,21 +60,130 @@ export function ChatInterface({
     }
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Function to send message to Flask backend
+  const sendToFlaskBackend = async (text: string, file?: File) => {
+    setIsLoading(true);
+    
+    try {
+      let response;
+      
+      if (file) {
+        // Send file to Flask backend
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('message', text);
+        
+        response = await fetch('http://localhost:5001/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        // Send text to Flask backend
+        response = await fetch('http://localhost:5001/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: text }),
+        });
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.response || "HELLO WE ARE TEAM X"; // Fallback to the default message
+      
+    } catch (error) {
+      console.error('Error communicating with Flask backend:', error);
+      // Return the default message if we can't connect to the backend
+      return "HELLO WE ARE TEAM X";
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle file uploads
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, type: "image" | "audio") => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload a file smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create URL for preview
+    const previewUrl = URL.createObjectURL(file);
+    
+    setAttachment({
+      type,
+      url: file.name, // This will be replaced by the actual URL from the server
+      previewUrl,
+      fileName: file.name,
+    });
+    
+    // Reset file input
+    event.target.value = '';
+  };
+
+  // Add URL as attachment
+  const handleAddLink = () => {
+    // Prompt for URL
+    const url = prompt("Enter webpage URL:");
+    if (!url) return;
+    
+    // Simple validation
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid URL starting with http:// or https://",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setAttachment({
+      type: "link",
+      url,
+    });
+  };
+  
+  // Clear attachment
+  const handleClearAttachment = () => {
+    if (attachment?.previewUrl) {
+      URL.revokeObjectURL(attachment.previewUrl);
+    }
+    setAttachment(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if ((!inputValue.trim() && !attachment) || isLoading) return;
+    
+    // Create user message content
+    const content = inputValue.trim() || (attachment ? `Sent ${attachment.type}` : "");
     
     // Add user message
     const userMessage: MessageType = {
       id: `user-${Date.now()}`,
       type: "user",
-      content: inputValue,
+      content,
+      ...(attachment && { attachment })
     };
     
     setMessages(prev => [...prev, userMessage]);
     
-    // Process the message to detect PII
-    const piiResults = detectPII(inputValue, detectionLevel);
+    // Process the message to detect PII (only for text content)
+    const piiResults = inputValue.trim() 
+      ? detectPII(inputValue, detectionLevel) 
+      : { detected: false, types: [] };
     
     // Format JSON based on detected PII
     let jsonDisplay = "";
@@ -82,28 +202,29 @@ export function ChatInterface({
       jsonDisplay = JSON.stringify(jsonData, null, 2);
     }
     
-    // Clear input
+    // Clear input and attachment
     setInputValue("");
+    setAttachment(null);
     
-    // Add system response with delay to simulate processing
-    setTimeout(() => {
-      const systemResponse: MessageType = {
-        id: `system-${Date.now()}`,
-        type: "system",
-        content: piiResults.detected 
-          ? "I've detected and secured the sensitive information in your message. This data has been stored safely and not shared with the AI processing system. How else can I assist you today?"
-          : "Thank you for your message. No sensitive information was detected. How else can I assist you today?"
+    // Get response from Flask backend
+    const file = attachment?.fileName ? new File([], attachment.fileName) : undefined;
+    const backendResponse = await sendToFlaskBackend(content, file);
+    
+    // Add system response
+    const systemResponse: MessageType = {
+      id: `system-${Date.now()}`,
+      type: "system",
+      content: backendResponse // Use the response from the Flask backend
+    };
+    
+    if (piiResults.detected) {
+      systemResponse.piiDetected = {
+        types: piiResults.types,
+        json: jsonDisplay
       };
-      
-      if (piiResults.detected) {
-        systemResponse.piiDetected = {
-          types: piiResults.types,
-          json: jsonDisplay
-        };
-      }
-      
-      setMessages(prev => [...prev, systemResponse]);
-    }, 1000);
+    }
+    
+    setMessages(prev => [...prev, systemResponse]);
   };
   
   const handleExampleClick = (example: string) => {
@@ -177,6 +298,55 @@ export function ChatInterface({
                 <div className="flex items-start justify-end">
                   <div className="bg-[#7B4DFF] bg-opacity-20 rounded-lg rounded-tr-none p-3 max-w-3xl">
                     <p className="text-white">{message.content}</p>
+                    
+                    {/* Attachment display */}
+                    {message.attachment && (
+                      <div className="mt-2 border border-[#7B4DFF] border-opacity-40 rounded p-2">
+                        <div className="flex items-center mb-1">
+                          {message.attachment.type === "image" && (
+                            <Image className="h-4 w-4 mr-1 text-[#00FFCA]" />
+                          )}
+                          {message.attachment.type === "audio" && (
+                            <Mic className="h-4 w-4 mr-1 text-[#00FFCA]" />
+                          )}
+                          {message.attachment.type === "link" && (
+                            <LinkIcon className="h-4 w-4 mr-1 text-[#00FFCA]" />
+                          )}
+                          <span className="text-xs text-[#00FFCA] font-medium">
+                            {message.attachment.type.charAt(0).toUpperCase() + message.attachment.type.slice(1)} Attachment
+                          </span>
+                        </div>
+                        
+                        {message.attachment.type === "image" && message.attachment.previewUrl && (
+                          <div className="mt-1">
+                            <img 
+                              src={message.attachment.previewUrl} 
+                              alt="Attached image" 
+                              className="max-w-full max-h-48 rounded"
+                            />
+                          </div>
+                        )}
+                        
+                        {message.attachment.type === "audio" && message.attachment.previewUrl && (
+                          <audio 
+                            src={message.attachment.previewUrl} 
+                            controls 
+                            className="max-w-full mt-1"
+                          />
+                        )}
+                        
+                        {message.attachment.type === "link" && (
+                          <a 
+                            href={message.attachment.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-[#00FFCA] text-sm underline mt-1 block truncate"
+                          >
+                            {message.attachment.url}
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="w-8 h-8 rounded-full bg-[#7B4DFF] flex items-center justify-center text-[#050A30] flex-shrink-0 ml-3">
                     <User className="h-5 w-5" />
@@ -189,20 +359,111 @@ export function ChatInterface({
       </div>
       
       <div className="p-4 border-t border-gray-800">
-        <form onSubmit={handleSubmit} className="flex items-center">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type your message here..."
-            className="flex-1 bg-[#121212] border-gray-700 text-white focus:ring-[#00FFCA] focus:border-[#00FFCA]"
-          />
-          <Button 
-            type="submit" 
-            size="icon"
-            className="ml-2 bg-[#00FFCA] text-[#050A30] hover:bg-opacity-80"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+        {/* Attachment preview */}
+        {attachment && (
+          <div className="mb-3 p-2 bg-[#121212] rounded-md border border-[#7B4DFF] border-opacity-30 flex items-center justify-between">
+            <div className="flex items-center">
+              {attachment.type === "image" && (
+                <Image className="h-4 w-4 mr-2 text-[#00FFCA]" />
+              )}
+              {attachment.type === "audio" && (
+                <Mic className="h-4 w-4 mr-2 text-[#00FFCA]" />
+              )}
+              {attachment.type === "link" && (
+                <LinkIcon className="h-4 w-4 mr-2 text-[#00FFCA]" />
+              )}
+              <span className="text-sm text-gray-300 truncate max-w-[200px]">
+                {attachment.fileName || attachment.url}
+              </span>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={handleClearAttachment}
+              className="h-6 w-6 text-gray-400 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
+        {/* Input form */}
+        <form onSubmit={handleSubmit} className="flex flex-col space-y-2">
+          <div className="flex items-center">
+            <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Type your message here..."
+              className="flex-1 bg-[#121212] border-gray-700 text-white focus:ring-[#00FFCA] focus:border-[#00FFCA]"
+              disabled={isLoading}
+            />
+            <Button 
+              type="submit" 
+              size="icon"
+              className="ml-2 bg-[#00FFCA] text-[#050A30] hover:bg-opacity-80"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+          
+          {/* Attachment buttons */}
+          <div className="flex justify-start space-x-2">
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              accept="image/*" 
+              className="hidden" 
+              onChange={(e) => handleFileUpload(e, "image")}
+            />
+            <input 
+              type="file" 
+              ref={audioInputRef}
+              accept="audio/*" 
+              className="hidden" 
+              onChange={(e) => handleFileUpload(e, "audio")}
+            />
+            
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs px-2 py-1 h-auto bg-transparent border-gray-700 text-gray-300 hover:bg-[#121212] hover:text-[#00FFCA]"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || !!attachment}
+            >
+              <Image className="h-3 w-3 mr-1" />
+              Image
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs px-2 py-1 h-auto bg-transparent border-gray-700 text-gray-300 hover:bg-[#121212] hover:text-[#00FFCA]"
+              onClick={() => audioInputRef.current?.click()}
+              disabled={isLoading || !!attachment}
+            >
+              <Mic className="h-3 w-3 mr-1" />
+              Audio
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs px-2 py-1 h-auto bg-transparent border-gray-700 text-gray-300 hover:bg-[#121212] hover:text-[#00FFCA]"
+              onClick={handleAddLink}
+              disabled={isLoading || !!attachment}
+            >
+              <LinkIcon className="h-3 w-3 mr-1" />
+              Link
+            </Button>
+          </div>
         </form>
       </div>
     </div>
