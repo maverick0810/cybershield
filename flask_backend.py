@@ -10,17 +10,19 @@ def chat():
     Endpoint to process chat messages and return a response.
     Always returns 'HELLO WE ARE TEAM X' regardless of input.
     """
-    # Extract data from request
-    data = request.json
-    
-    # Log received data (for debugging)
-    print(f"Received message: {data}")
-    
-    # Always return the same response
-    return jsonify({
-        "response": "HELLO WE ARE TEAM X",
-        "status": "success"
-    })
+    try:
+        # Get the message from the request
+        data = request.json
+        message = data.get('message', '')
+        
+        # Log the received message (for debugging)
+        print(f"Received message: {message}")
+        
+        # Always return the same response
+        return jsonify({"response": "HELLO WE ARE TEAM X"})
+    except Exception as e:
+        print(f"Error in /api/chat: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
@@ -28,25 +30,21 @@ def upload_file():
     Endpoint to handle file uploads (images, audio).
     Files are received but not processed, always returns 'HELLO WE ARE TEAM X'.
     """
-    # Check if there's a file in the request
-    if 'file' not in request.files:
-        return jsonify({
-            "response": "HELLO WE ARE TEAM X",
-            "status": "success",
-            "note": "No file was uploaded, but we're responding anyway."
-        })
-    
-    file = request.files['file']
-    
-    # Log file information (for debugging)
-    print(f"Received file: {file.filename}, type: {file.content_type}")
-    
-    # Always return the same response
-    return jsonify({
-        "response": "HELLO WE ARE TEAM X", 
-        "status": "success",
-        "fileReceived": True
-    })
+    try:
+        # Get the file and message
+        file = request.files.get('file')
+        message = request.form.get('message', '')
+        
+        # Log the upload (for debugging)
+        if file:
+            print(f"Received file: {file.filename}, Message: {message}")
+        
+        # Always return the same response
+        return jsonify({"response": "HELLO WE ARE TEAM X"})
+    except Exception as e:
+        print(f"Error in /api/upload: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
+    print("Starting Flask backend on http://localhost:5001")
     app.run(host='0.0.0.0', port=5001, debug=True)
