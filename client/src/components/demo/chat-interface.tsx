@@ -76,6 +76,8 @@ export function ChatInterface({
         response = await fetch('http://localhost:5001/api/upload', {
           method: 'POST',
           body: formData,
+          // Short timeout to avoid waiting too long if server isn't running
+          signal: AbortSignal.timeout(3000)
         });
       } else {
         // Send text to Flask backend
@@ -85,6 +87,8 @@ export function ChatInterface({
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ message: text }),
+          // Short timeout to avoid waiting too long if server isn't running
+          signal: AbortSignal.timeout(3000)
         });
       }
       
