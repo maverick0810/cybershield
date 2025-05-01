@@ -79,8 +79,8 @@ export function ChatInterface({
     }
   }, [messages]);
 
-  // Store the Python backend URL - replace with your ngrok/localtunnel URL when running your server
-  const PYTHON_BACKEND_URL = "REPLACE_WITH_YOUR_PUBLIC_URL"; // Example: "https://abcd1234.ngrok.io"
+  // Use the Python backend URL from props
+  // This will be set by the user in the demo controls
   
   // Process text input through Python backend API
   const processTextMessage = async (text: string) => {
@@ -100,11 +100,11 @@ export function ChatInterface({
       // Process the text message using your Python server with public URL
       try {
         // Check if Python backend URL has been set
-        if (PYTHON_BACKEND_URL === "REPLACE_WITH_YOUR_PUBLIC_URL") {
+        if (!pythonUrl) {
           throw new Error("Python backend URL not configured");
         }
         
-        const response = await fetch(`${PYTHON_BACKEND_URL}/api/process-python`, {
+        const response = await fetch(`${pythonUrl}/api/process-python`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -243,12 +243,12 @@ export function ChatInterface({
       
       try {
         // Check if Python backend URL has been set
-        if (PYTHON_BACKEND_URL === "REPLACE_WITH_YOUR_PUBLIC_URL") {
+        if (!pythonUrl) {
           throw new Error("Python backend URL not configured");
         }
         
         // Try the Python backend first
-        const response = await fetch(`${PYTHON_BACKEND_URL}/api/process-python`, {
+        const response = await fetch(`${pythonUrl}/api/process-python`, {
           method: "POST",
           body: formData,
         });
@@ -374,12 +374,12 @@ export function ChatInterface({
       
       try {
         // Check if Python backend URL has been set
-        if (PYTHON_BACKEND_URL === "REPLACE_WITH_YOUR_PUBLIC_URL") {
+        if (!pythonUrl) {
           throw new Error("Python backend URL not configured");
         }
         
         // Try the Python backend first
-        const response = await fetch(`${PYTHON_BACKEND_URL}/api/process-python`, {
+        const response = await fetch(`${pythonUrl}/api/process-python`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
