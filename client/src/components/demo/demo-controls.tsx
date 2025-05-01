@@ -3,15 +3,11 @@ import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
 
 interface DemoControlsProps {
   onDetectionLevelChange: (level: string) => void;
   onShowProcessingChange: (show: boolean) => void;
   onStorageFormatChange: (format: string) => void;
-  onPythonUrlChange?: (url: string) => void;
 }
 
 const examples = [
@@ -26,27 +22,17 @@ const examples = [
   { 
     text: "My date of birth is January 15, 1985 and my account number is A12345678.",
     description: "Include DOB and account number"
-  },
-  {
-    text: "I've been feeling depressed lately and my therapist suggested I try new anxiety medication.",
-    description: "Include mental health information"
-  },
-  {
-    text: "My fingerprint scan was required to access my genetic test results showing my predisposition to certain conditions.",
-    description: "Include biometric and genetic data"
   }
 ];
 
 export function DemoControls({ 
   onDetectionLevelChange,
   onShowProcessingChange,
-  onStorageFormatChange,
-  onPythonUrlChange
+  onStorageFormatChange
 }: DemoControlsProps) {
   const [detectionLevel, setDetectionLevel] = useState("Medium (Standard)");
   const [showProcessing, setShowProcessing] = useState(true);
   const [storageFormat, setStorageFormat] = useState("JSON");
-  const [pythonUrl, setPythonUrl] = useState("");
   
   const handleDetectionLevelChange = (value: string) => {
     setDetectionLevel(value);
@@ -61,14 +47,6 @@ export function DemoControls({
   const handleStorageFormatChange = (value: string) => {
     setStorageFormat(value);
     onStorageFormatChange(value);
-  };
-  
-  const handlePythonUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setPythonUrl(url);
-    if (onPythonUrlChange) {
-      onPythonUrlChange(url);
-    }
   };
 
   return (
@@ -97,90 +75,38 @@ export function DemoControls({
         
         <div className="border-t border-gray-800 pt-4">
           <h4 className="font-medium text-[#31E1F7] mb-2">PII Types Detected:</h4>
-          <div className="space-y-3">
-            {/* Standard PII */}
-            <div>
-              <h5 className="text-xs text-[#7B4DFF] mb-1">Standard PII:</h5>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Names</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Emails</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Phone Numbers</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Addresses</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">SSNs</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Credit Cards</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">DOB</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Account #s</span>
-                </div>
-              </div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center">
+              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+              <span className="text-gray-300">Names</span>
             </div>
-            
-            {/* Sensitive Information */}
-            <div>
-              <h5 className="text-xs text-[#7B4DFF] mb-1">Sensitive Information:</h5>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Mental Health</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Medical Info</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Personal Crisis</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Sensitive Info</span>
-                </div>
-              </div>
+            <div className="flex items-center">
+              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+              <span className="text-gray-300">Emails</span>
             </div>
-            
-            {/* Advanced Data Types */}
-            <div>
-              <h5 className="text-xs text-[#7B4DFF] mb-1">Advanced Data Types:</h5>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Biometric Data</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Genetic Info</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Behavioral Data</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
-                  <span className="text-gray-300">Employee IDs</span>
-                </div>
-              </div>
+            <div className="flex items-center">
+              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+              <span className="text-gray-300">Phone Numbers</span>
+            </div>
+            <div className="flex items-center">
+              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+              <span className="text-gray-300">Addresses</span>
+            </div>
+            <div className="flex items-center">
+              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+              <span className="text-gray-300">SSNs</span>
+            </div>
+            <div className="flex items-center">
+              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+              <span className="text-gray-300">Credit Cards</span>
+            </div>
+            <div className="flex items-center">
+              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+              <span className="text-gray-300">DOB</span>
+            </div>
+            <div className="flex items-center">
+              <div className="text-[#00FFCA] mr-2 text-xs">✓</div>
+              <span className="text-gray-300">Account #s</span>
             </div>
           </div>
         </div>
@@ -230,32 +156,6 @@ export function DemoControls({
                   <SelectItem value="Token Reference">Token Reference</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            
-            <div className="border-t border-gray-800 pt-4 mt-4">
-              <div className="flex items-center mb-2">
-                <AlertCircle className="text-[#31E1F7] h-4 w-4 mr-2" />
-                <h5 className="text-xs text-[#7B4DFF]">Python Backend Connection</h5>
-              </div>
-              <div className="text-xs text-gray-400 mb-2">
-                To use your local Python redaction engine, run the API server on your machine and enter the public URL provided by ngrok/localtunnel:
-              </div>
-              <div className="flex space-x-2">
-                <Input
-                  type="text"
-                  placeholder="https://your-tunnel-url.ngrok.io"
-                  value={pythonUrl}
-                  onChange={handlePythonUrlChange}
-                  className="flex-grow bg-[#121212] border-gray-700 text-gray-300 text-sm"
-                />
-                <Button 
-                  onClick={() => onPythonUrlChange && onPythonUrlChange(pythonUrl)}
-                  variant="outline"
-                  className="border-[#00FFCA] text-[#00FFCA] hover:bg-[#00FFCA] hover:bg-opacity-10"
-                >
-                  Connect
-                </Button>
-              </div>
             </div>
           </div>
         </div>
