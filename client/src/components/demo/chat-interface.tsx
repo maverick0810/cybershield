@@ -77,6 +77,9 @@ export function ChatInterface({
     }
   }, [messages]);
 
+  // Store the Python backend URL - replace with your ngrok/localtunnel URL when running your server
+  const PYTHON_BACKEND_URL = "REPLACE_WITH_YOUR_PUBLIC_URL"; // Example: "https://abcd1234.ngrok.io"
+  
   // Process text input through Python backend API
   const processTextMessage = async (text: string) => {
     try {
@@ -92,9 +95,14 @@ export function ChatInterface({
       
       setMessages(prev => [...prev, userMessage]);
       
-      // Process the text message using your local Python server
+      // Process the text message using your Python server with public URL
       try {
-        const response = await fetch("http://127.0.0.1:5001/api/process-python", {
+        // Check if Python backend URL has been set
+        if (PYTHON_BACKEND_URL === "REPLACE_WITH_YOUR_PUBLIC_URL") {
+          throw new Error("Python backend URL not configured");
+        }
+        
+        const response = await fetch(`${PYTHON_BACKEND_URL}/api/process-python`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -106,7 +114,12 @@ export function ChatInterface({
           }),
         });
         
+        if (!response.ok) {
+          throw new Error(`Python server responded with status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log("Using Python backend processing", data);
         
         // Prepare the system response
         let systemResponse: MessageType = {
@@ -227,8 +240,13 @@ export function ChatInterface({
       setMessages(prev => [...prev, userMessage]);
       
       try {
+        // Check if Python backend URL has been set
+        if (PYTHON_BACKEND_URL === "REPLACE_WITH_YOUR_PUBLIC_URL") {
+          throw new Error("Python backend URL not configured");
+        }
+        
         // Try the Python backend first
-        const response = await fetch("http://127.0.0.1:5001/api/process-python", {
+        const response = await fetch(`${PYTHON_BACKEND_URL}/api/process-python`, {
           method: "POST",
           body: formData,
         });
@@ -353,8 +371,13 @@ export function ChatInterface({
       setMessages(prev => [...prev, userMessage]);
       
       try {
+        // Check if Python backend URL has been set
+        if (PYTHON_BACKEND_URL === "REPLACE_WITH_YOUR_PUBLIC_URL") {
+          throw new Error("Python backend URL not configured");
+        }
+        
         // Try the Python backend first
-        const response = await fetch("http://127.0.0.1:5001/api/process-python", {
+        const response = await fetch(`${PYTHON_BACKEND_URL}/api/process-python`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

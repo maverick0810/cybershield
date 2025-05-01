@@ -8,6 +8,7 @@ interface DemoControlsProps {
   onDetectionLevelChange: (level: string) => void;
   onShowProcessingChange: (show: boolean) => void;
   onStorageFormatChange: (format: string) => void;
+  onPythonUrlChange?: (url: string) => void;
 }
 
 const examples = [
@@ -36,11 +37,13 @@ const examples = [
 export function DemoControls({ 
   onDetectionLevelChange,
   onShowProcessingChange,
-  onStorageFormatChange
+  onStorageFormatChange,
+  onPythonUrlChange
 }: DemoControlsProps) {
   const [detectionLevel, setDetectionLevel] = useState("Medium (Standard)");
   const [showProcessing, setShowProcessing] = useState(true);
   const [storageFormat, setStorageFormat] = useState("JSON");
+  const [pythonUrl, setPythonUrl] = useState("");
   
   const handleDetectionLevelChange = (value: string) => {
     setDetectionLevel(value);
@@ -55,6 +58,14 @@ export function DemoControls({
   const handleStorageFormatChange = (value: string) => {
     setStorageFormat(value);
     onStorageFormatChange(value);
+  };
+  
+  const handlePythonUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setPythonUrl(url);
+    if (onPythonUrlChange) {
+      onPythonUrlChange(url);
+    }
   };
 
   return (
