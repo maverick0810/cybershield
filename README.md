@@ -1,82 +1,118 @@
-# CyberShield AI - PII Protection Application
+# CyberShieldAI
 
-CyberShield AI is a sophisticated React-based frontend for demonstrating PII (Personal Identifiable Information) detection and protection capabilities. The application features a user authentication system and a chat interface that can process text inputs, images, audio files, and webpage links.
+A cybersecurity-aware AI assistant that can process text, images, and audio files to identify and redact Personally Identifiable Information (PII).
 
-## Key Features
+## Features
 
-- **User Authentication**: Registration and login system for secure access
-- **PII Detection**: Automatically detects personal information in messages
-- **Media Support**: Upload and process images, audio files, and webpage links
-- **Secure Storage**: Simulates secure storage of detected PII instead of forwarding to AI models
-- **Modern UI**: Dark-themed cybersecurity interface with animations
+- Text analysis with PII detection and redaction
+- Image processing with OCR (Optical Character Recognition)
+- Audio transcription
+- Secure handling of sensitive information
+- Context-aware PII redaction
 
-## Architecture
+## Prerequisites
 
-The application consists of two main components:
+- Python 3.8 or higher
+- Google API key for Gemini
+- FFmpeg (for audio processing)
 
-1. **Frontend**: React.js application with rich UI components and client-side PII detection
-2. **Backend**: 
-   - Node.js Express server for authentication
-   - Python Flask server for processing messages and media (always responds with "HELLO WE ARE TEAM X")
+## Installation
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 
-- Python 3.x with Flask and Flask-CORS installed
-
-### Running the Application
-
-You can start both servers (Node.js and Flask) simultaneously using the provided script:
+1. Clone the repository:
 
 ```bash
-./start_servers.sh
+git clone https://github.com/yourusername/CyberShieldAI.git
+cd CyberShieldAI
 ```
 
-Alternatively, you can run them separately:
+2. Create and activate a virtual environment:
 
-1. Start the Node.js server:
-   ```bash
-   npm run dev
-   ```
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-2. Start the Flask backend (in a separate terminal):
-   ```bash
-   python flask_backend.py
-   ```
+3. Install dependencies:
 
-### Using the Application
+```bash
+pip install -r requirements.txt
+```
 
-1. Open the application in your browser (typically at http://localhost:5000)
-2. Register a new account or login with an existing one
-3. Navigate to the chat interface
-4. Try sending messages with potential PII information (e.g., credit card numbers, emails, etc.)
-5. Try uploading images, audio files, or sharing links
+4. Create a `.env` file in the project root and add your Google API key:
 
-## Implementation Details
+```
+GOOGLE_API_KEY=your_api_key_here
+```
 
-### PII Detection
+## Usage
 
-The application detects various types of PII including:
-- Credit card numbers
-- Email addresses
-- Phone numbers
-- Social Security Numbers
-- Dates of birth
-- Physical addresses
-- Account numbers
-- Full names
+1. Start the Flask backend:
 
-### Response Handling
+```bash
+python flask_backend.py
+```
 
-The chatbot will always respond with "HELLO WE ARE TEAM X" regardless of the input, as specified in the requirements. The application is designed to be integrated with a more sophisticated AI backend if desired.
+2. The server will start on `http://localhost:5001`
 
-## Flask Backend API
+3. API Endpoints:
+   - `/api/chat` - For text analysis
+   - `/api/upload` - For image and audio file processing
 
-The Flask backend provides two main endpoints:
+## API Documentation
 
-- `/api/chat`: Processes text messages
-- `/api/upload`: Handles file uploads (images, audio)
+### Text Analysis
 
-Both endpoints always respond with the message "HELLO WE ARE TEAM X".
+```http
+POST /api/chat
+Content-Type: application/json
+
+{
+    "message": "Your text here"
+}
+```
+
+### File Upload
+
+```http
+POST /api/upload
+Content-Type: multipart/form-data
+
+file: [your file]
+message: [optional message]
+```
+
+## Project Structure
+
+```
+CyberShieldAI/
+├── flask_backend.py      # Main Flask application
+├── requirements.txt      # Python dependencies
+├── .env                 # Environment variables
+├── uploads/            # Directory for uploaded files
+└── README.md           # Project documentation
+```
+
+## Security Features
+
+- PII detection and redaction
+- Secure file handling
+- Temporary file cleanup
+- Environment variable protection
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Google Gemini AI
+- PaddleOCR
+- OpenAI Whisper

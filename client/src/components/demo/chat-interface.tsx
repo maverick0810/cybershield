@@ -60,25 +60,11 @@ export function ChatInterface({
     }
   }, [messages]);
 
-  // A simulated backend response that always returns "HELLO WE ARE TEAM X"
-  // This will be used when the Flask backend is not available
-  const simulateBackendResponse = async () => {
-    // Simulate a short delay for realism
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return "HELLO WE ARE TEAM X";
-  };
-
-  // Function to send message to Flask backend or use simulation if not available
+  // Function to send message to Flask backend
   const sendToFlaskBackend = async (text: string, file?: File) => {
     setIsLoading(true);
     
     try {
-      // Default to simulated response - skip actual fetch attempt in Replit environment
-      // This ensures the app works smoothly without requiring the Flask backend to be running
-      return await simulateBackendResponse();
-      
-      /* Note: The code below would be used in a production environment where the Flask backend is running
-      
       let response;
       
       if (file) {
@@ -90,8 +76,6 @@ export function ChatInterface({
         response = await fetch('http://localhost:5001/api/upload', {
           method: 'POST',
           body: formData,
-          // Short timeout to avoid waiting too long if server isn't running
-          signal: AbortSignal.timeout(3000)
         });
       } else {
         // Send text to Flask backend
@@ -101,8 +85,6 @@ export function ChatInterface({
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ message: text }),
-          // Short timeout to avoid waiting too long if server isn't running
-          signal: AbortSignal.timeout(3000)
         });
       }
       
@@ -111,13 +93,11 @@ export function ChatInterface({
       }
       
       const data = await response.json();
-      return data.response || "HELLO WE ARE TEAM X"; // Fallback to the default message
-      */
+      return data.response;
       
     } catch (error) {
       console.error('Error communicating with Flask backend:', error);
-      // Return the default message if we can't connect to the backend
-      return "HELLO WE ARE TEAM X";
+      return "I'm having trouble connecting to the server. Please try again later.";
     } finally {
       setIsLoading(false);
     }
@@ -204,22 +184,22 @@ export function ChatInterface({
       ? detectPII(inputValue, detectionLevel) 
       : { detected: false, types: [] };
     
-    // Format JSON based on detected PII
-    let jsonDisplay = "";
-    if (piiResults.detected && piiResults.types.length > 0) {
-      const jsonData = {
-        session_id: `${Math.random().toString(36).substring(2, 10)}`,
-        timestamp: new Date().toISOString(),
-        pii_items: piiResults.types.map(type => ({
-          type: type.type,
-          value: "[ENCRYPTED]",
-          hash: `${Math.random().toString(36).substring(2, 6)}...${Math.random().toString(36).substring(2, 6)}`,
-          position: [Math.floor(Math.random() * 100), Math.floor(Math.random() * 100) + 100]
-        }))
-      };
+    // // Format JSON based on detected PII
+    // let jsonDisplay = "";
+    // if (piiResults.detected && piiResults.types.length > 0) {
+    //   const jsonData = {
+    //     session_id: `${Math.random().toString(36).substring(2, 10)}`,
+    //     timestamp: new Date().toISOString(),
+    //     pii_items: piiResults.types.map(type => ({
+    //       type: type.type,
+    //       value: "[ENCRYPTED]",
+    //       hash: `${Math.random().toString(36).substring(2, 6)}...${Math.random().toString(36).substring(2, 6)}`,
+    //       position: [Math.floor(Math.random() * 100), Math.floor(Math.random() * 100) + 100]
+    //     }))
+    //   };
       
-      jsonDisplay = JSON.stringify(jsonData, null, 2);
-    }
+    //   jsonDisplay = JSON.stringify(jsonData, null, 2);
+    // }
     
     // Clear input and attachment
     setInputValue("");
@@ -236,12 +216,12 @@ export function ChatInterface({
       content: backendResponse // Use the response from the Flask backend
     };
     
-    if (piiResults.detected) {
-      systemResponse.piiDetected = {
-        types: piiResults.types,
-        json: jsonDisplay
-      };
-    }
+    // if (piiResults.detected) {
+    //   systemResponse.piiDetected = {
+    //     types: piiResults.types,
+    //     // json: jsonDisplay
+    //   };
+    // }
     
     setMessages(prev => [...prev, systemResponse]);
   };
