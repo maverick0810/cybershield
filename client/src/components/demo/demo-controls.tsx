@@ -20,8 +20,8 @@ const examples = [
     description: "Include SSN and address"
   },
   { 
-    text: "My date of birth is January 15, 1985 and my account number is A12345678.",
-    description: "Include DOB and account number"
+    text: "my account number is A12345678.",
+    description: "Include account number"
   }
 ];
 
@@ -73,7 +73,7 @@ export function DemoControls({
           </div>
         </div>
         
-        <div className="border-t border-gray-800 pt-4">
+        {/* <div className="border-t border-gray-800 pt-4">
           <h4 className="font-medium text-[#31E1F7] mb-2">PII Types Detected:</h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center">
@@ -158,7 +158,7 @@ export function DemoControls({
               </Select>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

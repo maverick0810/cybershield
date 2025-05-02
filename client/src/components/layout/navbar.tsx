@@ -30,34 +30,26 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/">
-              <a className="flex items-center">
-                <motion.div 
-                  className="w-8 h-8 rounded-md bg-[#00FFCA] flex items-center justify-center mr-2"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Shield className="h-5 w-5 text-[#050A30]" />
-                </motion.div>
-                <span className="font-bold text-xl text-white">CyberShield<span className="text-[#00FFCA]">AI</span></span>
-              </a>
+            <Link href="/" className="flex items-center">
+              <motion.div 
+                className="w-8 h-8 rounded-md bg-[#00FFCA] flex items-center justify-center mr-2"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Shield className="h-5 w-5 text-[#050A30]" />
+              </motion.div>
+              <span className="font-bold text-xl text-white">CyberShield<span className="text-[#00FFCA]">AI</span></span>
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/features">
-              <a className={`text-${isActive('/features') ? '[#00FFCA]' : 'gray-300'} hover:text-[#00FFCA] transition-colors duration-300`}>
-                Features
-              </a>
+            <Link href="/features" className={`text-${isActive('/features') ? '[#00FFCA]' : 'gray-300'} hover:text-[#00FFCA] transition-colors duration-300`}>
+              Features
             </Link>
-            <Link href="/how-it-works">
-              <a className={`text-${isActive('/how-it-works') ? '[#00FFCA]' : 'gray-300'} hover:text-[#00FFCA] transition-colors duration-300`}>
-                How It Works
-              </a>
+            <Link href="/how-it-works" className={`text-${isActive('/how-it-works') ? '[#00FFCA]' : 'gray-300'} hover:text-[#00FFCA] transition-colors duration-300`}>
+              How It Works
             </Link>
-            <Link href="/demo">
-              <a className={`text-${isActive('/demo') ? '[#00FFCA]' : 'gray-300'} hover:text-[#00FFCA] transition-colors duration-300`}>
-                Demo
-              </a>
+            <Link href="/demo" className={`text-${isActive('/demo') ? '[#00FFCA]' : 'gray-300'} hover:text-[#00FFCA] transition-colors duration-300`}>
+              Demo
             </Link>
             
             {user ? (
@@ -77,15 +69,11 @@ export function Navbar() {
               </div>
             ) : (
               <>
-                <Link href="/auth">
-                  <a className={`text-${isActive('/auth') ? '[#00FFCA]' : 'gray-300'} hover:text-[#00FFCA] transition-colors duration-300`}>
-                    Login
-                  </a>
+                <Link href="/auth" className={`text-${isActive('/auth') ? '[#00FFCA]' : 'gray-300'} hover:text-[#00FFCA] transition-colors duration-300`}>
+                  Login
                 </Link>
-                <Link href="/auth">
-                  <a className="px-4 py-2 rounded-md bg-[#00FFCA] text-[#050A30] font-medium hover:bg-opacity-80 transition-all duration-300">
-                    Sign Up
-                  </a>
+                <Link href="/auth" className="px-4 py-2 rounded-md bg-[#00FFCA] text-[#050A30] font-medium hover:bg-opacity-80 transition-all duration-300">
+                  Sign Up
                 </Link>
               </>
             )}

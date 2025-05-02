@@ -1,12 +1,29 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Shield, Image, Mic, Link as LinkIcon, Paperclip, X } from "lucide-react";
+import { Send, Bot, User, Shield, Image, Mic, Link as LinkIcon, Paperclip, X, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { detectPII } from "@/lib/pii-detector";
 import { toast } from "@/hooks/use-toast";
 
 import React from "react";
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message: string;
+}
 
 type MessageType = {
   id: string;
@@ -52,6 +69,10 @@ export function ChatInterface({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -104,7 +125,7 @@ export function ChatInterface({
   };
 
   // Handle file uploads
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, type: "image" | "audio") => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: "image" | "audio") => {
     const file = event.target.files?.[0];
     if (!file) return;
     
@@ -123,10 +144,71 @@ export function ChatInterface({
     
     setAttachment({
       type,
-      url: file.name, // This will be replaced by the actual URL from the server
+      url: file.name,
       previewUrl,
       fileName: file.name,
     });
+
+    // If it's an image, extract text and send to chat
+    if (type === "image") {
+      try {
+        setIsLoading(true);
+        
+        // Create FormData for image upload
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+        
+        // Send image to backend for OCR
+        const response = await fetch('http://localhost:5001/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Check if we got a valid response
+        if (!data) {
+          throw new Error('No response from server');
+        }
+
+        // Add user message with image
+        const userMessage: MessageType = {
+          id: `user-${Date.now()}`,
+          type: "user",
+          content: data.extracted_text || "Uploaded an image",
+          attachment: {
+            type: "image",
+            url: file.name,
+            previewUrl,
+            fileName: file.name,
+          }
+        };
+        
+        // Add system response
+        const systemResponse: MessageType = {
+          id: `system-${Date.now()}`,
+          type: "system",
+          content: data.response || "I've processed the image but couldn't extract any text. Please try again with a clearer image."
+        };
+        
+        // Add both messages to chat
+        setMessages(prev => [...prev, userMessage, systemResponse]);
+        
+      } catch (error) {
+        console.error('Error processing image:', error);
+        toast({
+          title: "Error processing image",
+          description: error instanceof Error ? error.message : "Failed to process the image. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
     
     // Reset file input
     event.target.value = '';
@@ -228,6 +310,60 @@ export function ChatInterface({
   
   const handleExampleClick = (example: string) => {
     setInputValue(example);
+  };
+
+  // Function to start recording
+  const startRecording = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new window.webkitSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      console.log("Started listening...");
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
+      console.log("Heard:", transcript);
+      setInputValue(transcript);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.log("Error:", event.error);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      console.log("Stopped listening");
+      setIsRecording(false);
+    };
+
+    recognition.start();
+  };
+
+  const stopRecording = () => {
+    setIsRecording(false);
+  };
+
+  // Function to handle text-to-speech
+  const handleSpeak = (text: string) => {
+    if ("speechSynthesis" in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(utterance);
+    } else {
+      toast({
+        title: "Error",
+        description: "Speech synthesis is not supported in this browser",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -392,8 +528,8 @@ export function ChatInterface({
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Type your message here..."
-              className="flex-1 bg-[#121212] border-gray-700 text-white focus:ring-[#00FFCA] focus:border-[#00FFCA]"
+              placeholder={isRecording ? "Listening..." : "Type your message here..."}
+              className={`flex-1 bg-[#121212] border-gray-700 text-white focus:ring-[#00FFCA] focus:border-[#00FFCA] ${isRecording ? 'border-[#00FFCA]' : ''}`}
               disabled={isLoading}
             />
             <Button 
@@ -419,13 +555,6 @@ export function ChatInterface({
               className="hidden" 
               onChange={(e) => handleFileUpload(e, "image")}
             />
-            <input 
-              type="file" 
-              ref={audioInputRef}
-              accept="audio/*" 
-              className="hidden" 
-              onChange={(e) => handleFileUpload(e, "audio")}
-            />
             
             <Button
               type="button"
@@ -443,12 +572,21 @@ export function ChatInterface({
               type="button"
               variant="outline"
               size="sm"
-              className="text-xs px-2 py-1 h-auto bg-transparent border-gray-700 text-gray-300 hover:bg-[#121212] hover:text-[#00FFCA]"
-              onClick={() => audioInputRef.current?.click()}
+              className={`text-xs px-2 py-1 h-auto bg-transparent border-gray-700 text-gray-300 hover:bg-[#121212] hover:text-[#00FFCA] ${isRecording ? 'bg-red-500 hover:bg-red-600 text-white' : ''}`}
+              onClick={isRecording ? stopRecording : startRecording}
               disabled={isLoading || !!attachment}
             >
-              <Mic className="h-3 w-3 mr-1" />
-              Audio
+              {isRecording ? (
+                <>
+                  <Square className="h-3 w-3 mr-1" />
+                  Stop Recording
+                </>
+              ) : (
+                <>
+                  <Mic className="h-3 w-3 mr-1" />
+                  Record Audio
+                </>
+              )}
             </Button>
             
             <Button

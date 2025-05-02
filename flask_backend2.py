@@ -11,6 +11,8 @@ from PIL import Image
 import io
 import shutil
 from datetime import datetime
+import json
+
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +28,9 @@ logger = logging.getLogger(__name__)
 UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+OUTPUT_FOLDER = 'output'
+if not os.path.exists(OUTPUT_FOLDER):
+    os.makedirs(OUTPUT_FOLDER)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -56,20 +61,20 @@ except Exception as e:
     ocr = None
 
 def get_gemini_response(prompt):
-    """Get response from Gemini LLM"""
+    """Get response from Gemini LLM and extract entities, redacted content, and confidence."""
     if model is None:
         return "Error: Model not initialized"
     
     try:
         # Add preprompt to the user's input
         preprompt = """
-        You are a cybersecurity-aware AI, answer accordingly . Your task is to first scan the user input for any Personally Identifiable Information (PII) such as names, phone numbers, email addresses, ids and addresses etc (things that make someone's identity or information leak).
-
+        You are a cybersecurity-aware AI, answer accordingly. Your task is to first scan the user input for any Personally Identifiable Information (PII) such as names, phone numbers, email addresses, ids, and addresses etc.
+        
         Then:
         1. Redact that information by replacing it with context-aware placeholders such as [person name], [phone number], [email address], [address],[enrollment number] by which a person's personal information can be identified etc.
         2. Once redacted, treat the redacted version as the true input, and generate a response based only on the redacted text.
         3. Ensure your final response reflects the placeholders instead of exposing any PII.
-        4. use context awareness also based on the user input's context where should i redact and where should i not, emphasize a lot on the context awareness part.
+        4. Use context awareness also based on the user input's context where should I redact and where should I not, emphasize a lot on the context awareness part.
         If you are uncertain whether something is PII or not, err on the side of caution and redact it.
         Be helpful. Acknowledge uncertainty if necessary, and do not hallucinate information.
         """
@@ -80,55 +85,43 @@ def get_gemini_response(prompt):
         response = model.generate_content(
             full_prompt,
             safety_settings=[
-                {
-                    "category": "HARM_CATEGORY_HARASSMENT",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_HATE_SPEECH",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    "threshold": "BLOCK_NONE"
-                }
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
             ]
         )
         
         # Log the response for debugging
-        logger.info(f"Gemini response type: {type(response)}")
         logger.info(f"Gemini response: {response}")
         
-        # Handle the response properly based on its structure
-        if hasattr(response, 'candidates') and response.candidates:
-            # New format with candidates
-            return response.candidates[0].content.parts[0].text
-        elif hasattr(response, 'parts') and response.parts:
-            # Format with parts
-            return response.parts[0].text
-        elif hasattr(response, 'text'):
-            # Simple text format
-            return response.text
-        else:
-            # Try to get text from any available attribute
-            for attr in dir(response):
-                if not attr.startswith('_'):
-                    value = getattr(response, attr)
-                    if isinstance(value, str):
-                        return value
-                    elif hasattr(value, 'text'):
-                        return value.text
-            
-            logger.error("Could not extract text from response")
-            return "I apologize, but I couldn't generate a proper response. Please try again."
-            
+        # Extract entities and redacted content from the response
+        entities = []
+        redacted_output = ""
+        confidence_threshold = 0.90  # Example threshold, can be adjusted based on your use case
+        
+        if hasattr(response, 'entities'):
+            # Assume response.entities is a list of identified entities with type and value
+            for entity in response.entities:
+                entities.append({
+                    "type": entity['type'],
+                    "value": entity['value'],
+                    "confidence": entity.get('confidence', 1.0)  # Default confidence to 1.0 if not provided
+                })
+        
+        if hasattr(response, 'redacted_output'):
+            redacted_output = response.redacted_output
+        
+        # Ensure response structure includes these details
+        return {
+            "response": response,
+            "entities": entities,
+            "redacted_output": redacted_output,
+            "confidence_threshold": confidence_threshold
+        }
     except Exception as e:
         logger.error(f"Error getting response from Gemini: {str(e)}")
-        return f"Error: {str(e)}"
+        return {"error": str(e)}
 
 def process_audio(audio_file):
     """Process audio file using Whisper"""
@@ -259,85 +252,110 @@ def chat():
         if not message:
             return jsonify({"response": "No message provided"})
         
-        response = get_gemini_response(message)
-        return jsonify({"response": response})
-            
+        # Get response from Gemini, including entities, redacted content, and confidence threshold
+        response_data = get_gemini_response(message)
+        
+        if "error" in response_data:
+            return jsonify({"error": response_data["error"]}), 500
+        
+        response = response_data["response"]
+        entities = response_data["entities"]
+        redacted_output = response_data["redacted_output"]
+        confidence_threshold = response_data["confidence_threshold"]
+        
+        # Save to JSON file with entities and redacted output
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_filename = f"chat_{timestamp}.json"
+        output_path = os.path.join(OUTPUT_FOLDER, json_filename)
+        
+        with open(output_path, 'w') as f:
+            json.dump({
+                "input": message,
+                "entities": entities,
+                "redacted_output": redacted_output,
+                "confidence_threshold": confidence_threshold,
+                "response": response
+            }, f, indent=4)
+        
+        return jsonify({
+            "response": response,
+            "entities": entities,
+            "redacted_output": redacted_output,
+            "confidence_threshold": confidence_threshold
+        })
     except Exception as e:
         logger.error(f"Error in /api/chat: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """Handle file uploads (images, audio)"""
+    """Handle file upload and process for redaction, entity extraction"""
     try:
-        # Log all request data for debugging
-        logger.info("Received upload request")
-        logger.info(f"Request files: {request.files}")
-        logger.info(f"Request form: {request.form}")
-        
+        # Check if a file was uploaded
         if 'file' not in request.files:
-            logger.error("No file part in request")
-            return jsonify({"response": "No file part in request"})
-            
+            return jsonify({"error": "No file provided"}), 400
+        
         file = request.files['file']
         
+        # Check if file is empty
         if file.filename == '':
-            logger.error("No selected file")
-            return jsonify({"response": "No selected file"})
+            return jsonify({"error": "No selected file"}), 400
         
-        # Get file extension and determine type
-        filename = file.filename.lower()
-        logger.info(f"Processing file: {filename}")
+        # Read and extract text from the file (assume it's an image, text, or audio)
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
         
-        # Validate file extension
-        if filename.endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
-            file_type = 'image'
-        elif filename.endswith(('.wav', '.mp3', '.m4a', '.ogg')):
-            file_type = 'audio'
-        else:
-            logger.error(f"Unsupported file type: {filename}")
-            return jsonify({"response": f"Unsupported file type: {filename}"})
+        # Extract text from the uploaded file
+        extracted_text = ""
+        if file_extension in ['png', 'jpg', 'jpeg']:  # Image file
+            extracted_text = extract_text_from_image(file)
+        elif file_extension in ['mp3', 'wav']:  # Audio file
+            extracted_text = extract_text_from_audio(file)
+        elif file_extension in ['txt']:  # Text file
+            extracted_text = file.read().decode('utf-8')
         
-        logger.info(f"Processing {file_type} file: {filename}")
+        # If no text was extracted, return an error
+        if not extracted_text:
+            return jsonify({"error": "No text extracted from file"}), 400
         
-        # Read file content first to verify it's not empty
-        file_content = file.read()
-        if not file_content:
-            logger.error("Empty file content")
-            return jsonify({"response": "Error: Empty file content"})
+        # Get Gemini response, including entities and redacted content
+        response_data = get_gemini_response(extracted_text)
         
-        # Reset file pointer
-        file.seek(0)
+        if "error" in response_data:
+            return jsonify({"error": response_data["error"]}), 500
         
-        # Process file based on type
-        if file_type == 'audio':
-            extracted_text = process_audio(file)
-        else:  # image
-            extracted_text = process_image(file)
+        response = response_data["response"]
+        entities = response_data["entities"]
+        redacted_output = response_data["redacted_output"]
+        confidence_threshold = response_data["confidence_threshold"]
         
-        # Check if processing was successful
-        if extracted_text.startswith("Error"):
-            return jsonify({"response": extracted_text})
+        # Save to JSON file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_filename = f"upload_{timestamp}.json"
+        output_path = os.path.join(OUTPUT_FOLDER, json_filename)
         
-        # If there's a message, combine it with the extracted text
-        message = request.form.get('message', '')
-        if message:
-            prompt = f"{message}\n\nExtracted content:\n{extracted_text}"
-        else:
-            prompt = extracted_text
-        
-        # Get response from Gemini
-        response = get_gemini_response(prompt)
+        with open(output_path, 'w') as f:
+            json.dump({
+                "file_name": file.filename,
+                "extracted_text": extracted_text,
+                "entities": entities,
+                "redacted_output": redacted_output,
+                "confidence_threshold": confidence_threshold,
+                "response": response
+            }, f, indent=4)
         
         return jsonify({
-            "response": response,
-            "extracted_text": extracted_text,
-            "file_type": file_type
+            "file_name": file.filename,
+            "entities": entities,
+            "redacted_output": redacted_output,
+            "confidence_threshold": confidence_threshold,
+            "response": response
         })
-            
+    
     except Exception as e:
         logger.error(f"Error in /api/upload: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     print("Starting Flask backend on http://localhost:5001")

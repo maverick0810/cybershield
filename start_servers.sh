@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # Start Node.js server
+npm install
 echo "Starting Node.js server..."
 npm run dev &
 NODE_PID=$!
 
 # Start Flask backend
+pip install -r requirements.txt
 echo "Starting Flask backend..."
 python flask_backend.py &
 FLASK_PID=$!
