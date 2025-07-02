@@ -8,7 +8,8 @@ A cybersecurity-aware AI assistant that can process text, images, and audio file
 - Image processing with OCR (Optical Character Recognition)
 - Audio transcription
 - Secure handling of sensitive information
-- Context-aware PII redaction
+- Context-aware PII redaction using LLM and transformers
+
 
 ## Prerequisites
 
